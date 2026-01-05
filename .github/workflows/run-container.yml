@@ -33,5 +33,4 @@ jobs:
           context: .
           push: true
           tags: |
-            muhammadibrahim7860/textapp:latest
             muhammadibrahim7860/textapp:${{ github.sha }}
