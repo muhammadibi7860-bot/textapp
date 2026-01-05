@@ -1,35 +1,43 @@
-name: Build and Run Docker Container
+name: Run Docker Compose (API + Postgres)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
 jobs:
-  run-container:
+  compose-test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: docker build -t textapp .
-
-      - name: Run container
+      - name: Build and start services
         run: |
-          docker run -d --name textapp_ci -p 8000:8000 textapp
-          docker ps
+          docker compose up -d --build
+          docker compose ps
 
-      - name: Smoke test
+      - name: Wait for API and smoke test
         run: |
-          sleep 5
-          curl http://localhost:8000 || exit 1
+          set -e
+          for i in {1..40}; do
+            if curl -fsS http://localhost:8000/ > /dev/null; then
+              echo "API is up ✅"
+              exit 0
+            fi
+            echo "Waiting for API... ($i/40)"
+            sleep 2
+          done
+          echo "API did not start ❌"
+          docker compose logs --no-color
+          exit 1
 
-      - name: Show logs
+      - name: Logs (always)
         if: always()
-        run: docker logs textapp_ci
+        run: docker compose logs --no-color || true
 
-      - name: Cleanup
+      - name: Stop (always)
         if: always()
-        run: docker rm -f textapp_ci
-
+        run: docker compose down --remove-orphans -v || true
