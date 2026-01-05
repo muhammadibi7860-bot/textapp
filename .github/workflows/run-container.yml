@@ -18,6 +18,11 @@ jobs:
           docker --version
           docker compose version
 
+      # 🔥 IMPORTANT: cleanup old named containers (from previous runs)
+      - name: Cleanup old named containers
+        run: |
+          docker rm -f nlp-postgres nlp-api 2>/dev/null || true
+
       - name: Deploy (docker compose)
         run: |
           echo "== compose down =="
@@ -35,9 +40,6 @@ jobs:
       - name: Smoke test (with debug)
         run: |
           set -e
-          echo "== checking port 8000 listeners =="
-          (lsof -nP -iTCP:8000 -sTCP:LISTEN || true)
-
           for i in {1..40}; do
             if curl -fsS http://localhost:8000/ > /dev/null; then
               echo "API is up ✅"
@@ -48,9 +50,6 @@ jobs:
           done
 
           echo "API did not start ❌"
-          echo "== curl verbose =="
-          curl -v http://localhost:8000/ || true
-
           echo "== compose ps =="
           docker compose ps || true
 
