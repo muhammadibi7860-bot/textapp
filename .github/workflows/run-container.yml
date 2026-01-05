@@ -20,13 +20,24 @@ jobs:
 
       - name: Deploy (docker compose)
         run: |
+          echo "== compose down =="
           docker compose down --remove-orphans || true
+
+          echo "== compose up =="
           docker compose up -d --build
+
+          echo "== compose ps =="
           docker compose ps
 
-      - name: Smoke test
+          echo "== docker ps =="
+          docker ps -a
+
+      - name: Smoke test (with debug)
         run: |
           set -e
+          echo "== checking port 8000 listeners =="
+          (lsof -nP -iTCP:8000 -sTCP:LISTEN || true)
+
           for i in {1..40}; do
             if curl -fsS http://localhost:8000/ > /dev/null; then
               echo "API is up ✅"
@@ -35,6 +46,18 @@ jobs:
             echo "Waiting for API... ($i/40)"
             sleep 2
           done
+
           echo "API did not start ❌"
-          docker compose logs --no-color
+          echo "== curl verbose =="
+          curl -v http://localhost:8000/ || true
+
+          echo "== compose ps =="
+          docker compose ps || true
+
+          echo "== compose logs api =="
+          docker compose logs --no-color api || true
+
+          echo "== compose logs db =="
+          docker compose logs --no-color db || true
+
           exit 1
