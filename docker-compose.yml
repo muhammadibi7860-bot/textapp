@@ -1,0 +1,27 @@
+
+
+services:
+  db:
+    image: postgres:16
+    container_name: nlp-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: nlp_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build: .
+    container_name: nlp-api
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/nlp_db
+    ports:
+      - "8000:8000"
+
+volumes:
+  postgres_data:
