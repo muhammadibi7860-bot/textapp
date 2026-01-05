@@ -1,0 +1,35 @@
+name: Build and Run Docker Container
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  run-container:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t textapp .
+
+      - name: Run container
+        run: |
+          docker run -d --name textapp_ci -p 8000:8000 textapp
+          docker ps
+
+      - name: Smoke test
+        run: |
+          sleep 5
+          curl http://localhost:8000 || exit 1
+
+      - name: Show logs
+        if: always()
+        run: docker logs textapp_ci
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f textapp_ci
+
